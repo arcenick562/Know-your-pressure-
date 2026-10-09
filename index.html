@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>What's Your Pressure? v3</title>
+<style>
+  :root{
+    --bg:#0b0f14;
+    --card:#121923;
+    --card2:#182230;
+    --text:#f7f9fb;
+    --muted:#aeb9c6;
+    --accent:#ff4d6d;
+    --accent2:#6ee7ff;
+    --ok:#35d07f;
+    --warn:#ffd166;
+    --danger:#ff6b6b;
+    --border:#283444;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background:
+      radial-gradient(circle at 15% 10%, rgba(110,231,255,.14), transparent 30%),
+      radial-gradient(circle at 85% 0%, rgba(255,77,109,.14), transparent 30%),
+      var(--bg);
+    color:var(--text);
+    min-height:100vh;
+  }
+  .wrap{max-width:720px;margin:0 auto;padding:28px 18px 56px}
+  .eyebrow{
+    display:inline-block;
+    font-weight:800;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    font-size:.78rem;
+    color:var(--accent2);
+    margin-bottom:8px;
+  }
+  h1{font-size:clamp(2.2rem,10vw,4.2rem);line-height:.95;margin:.1em 0 .22em}
+  .sub{font-size:1.08rem;color:var(--muted);line-height:1.5;margin:0 0 24px}
+  .card{
+    background:linear-gradient(180deg,var(--card),#793232);
+    border:1px solid var(--border);
+    border-radius:22px;
+    padding:20px;
+    box-shadow:0 18px 50px rgba(0,0,0,.2);
+    margin:14px 0;
+  }
+  .answer-body{
+    overflow:hidden;
+    max-height:500px;
+    opacity:1;
+    transition:max-height .35s ease, opacity .25s ease, margin .25s ease;
+  }
+  .answer-body.collapsed{
+    max-height:0;
+    opacity:0;
+    margin:0;
+    pointer-events:none;
+  }
+  .answered-summary{
+    display:none;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    background:#0d141d;
+    border:1px solid var(--border);
+    border-radius:14px;
+    padding:12px 14px;
+    margin-top:10px;
+  }
+  .answered-summary.show{display:flex}
+  .answered-summary strong{color:var(--accent2)}
+  .edit-answer{
+    width:auto;
+    padding:8px 11px;
+    font-size:.82rem;
+    white-space:nowrap;
+  }
+  .question{font-weight:800;font-size:1.12rem;margin-bottom:12px}
+  .guess-grid,.risk-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  button,.choice{
+    appearance:none;
+    border:1px solid var(--border);
+    background:var(--card2);
+    color:var(--text);
+    padding:14px;
+    border-radius:14px;
+    font-weight:750;
+    cursor:pointer;
+    text-align:center;
+    font-size:.98rem;
+  }
+  button:hover,.choice:hover{transform:translateY(-1px)}
+  .choice.selected{outline:2px solid var(--accent2);background:#142634}
+  .inputs{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:10px}
+  label{font-size:.83rem;color:var(--muted);display:block;margin-bottom:6px}
+  input{
+    width:100%;
+    border:1px solid var(--border);
+    background:#0b1118;
+    color:var(--text);
+    border-radius:14px;
+    padding:16px;
+    font-size:1.35rem;
+    font-weight:800;
+    outline:none;
+  }
+  input:focus{border-color:var(--accent2)}
+  .cta{
+    width:100%;
+    margin-top:14px;
+    background:linear-gradient(90deg,var(--accent),#ff7a59);
+    border:none;
+    font-size:1.05rem;
+  }
+  .result{display:none}
+  .result.show{display:block}
+  .reading{font-size:2.1rem;font-weight:900;margin:4px 0}
+  .badge{
+    display:inline-block;
+    padding:7px 10px;
+    border-radius:999px;
+    font-size:.85rem;
+    font-weight:900;
+    margin:3px 0 12px;
+  }
+  .normal{background:rgba(53,208,127,.14);color:#74f0a8}
+  .elevated{background:rgba(255,209,102,.14);color:#ffe08a}
+  .stage1{background:rgba(255,166,77,.14);color:#ffbc78}
+  .stage2,.severe{background:rgba(255,107,107,.14);color:#ff9292}
+  .plain{color:var(--muted);line-height:1.58}
+  .callout{
+    background:#0d141d;
+    border-left:4px solid var(--accent2);
+    padding:14px 14px 14px 16px;
+    border-radius:10px;
+    line-height:1.5;
+    margin:14px 0;
+  }
+  .dangerbox{border-left-color:var(--danger)}
+  .mini-title{font-size:1.1rem;font-weight:900;margin:20px 0 10px}
+  .risk-grid .choice{font-weight:700}
+  .footer{
+    margin-top:26px;
+    color:#8793a1;
+    font-size:.8rem;
+    line-height:1.5;
+  }
+  .footer a{color:#a9eaf8}
+  .tiny{font-size:.78rem;color:#8995a3;margin-top:10px}
+  @media (max-width:480px){
+    .guess-grid,.risk-grid{grid-template-columns:1fr}
+    .inputs{grid-template-columns:1fr 1fr}
+  }
+</style>
+</head>
+<body>
+<main class="wrap">
+  <div class="eyebrow">Young Adult Heart Health</div>
+  <h1>WHAT'S YOUR PRESSURE?</h1>
+  <p class="sub">You know your battery percentage. Do you know your blood pressure? Guess first, then check your number.</p>
+
+  <section class="card" id="guessCard">
+    <div class="question">1. Before we check... what do you think your BP will be?</div>
+    <div class="answer-body" id="guessBody">
+      <div class="guess-grid" id="guessGrid">
+        <button class="choice" data-guess="Low">Low</button>
+        <button class="choice" data-guess="Normal">Normal</button>
+        <button class="choice" data-guess="Elevated">Elevated</button>
+        <button class="choice" data-guess="High">High</button>
+        <button class="choice" data-guess="No idea">Absolutely no idea 💀</button>
+      </div>
+    </div>
+    <div class="answered-summary" id="guessSummary">
+      <span>Your guess: <strong id="guessSummaryText"></strong></span>
+      <button class="edit-answer" id="editGuessBtn">Change</button>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="question">2. Enter your actual reading</div>
+    <div class="inputs">
+      <div>
+        <label for="sys">Systolic (top number)</label>
+        <input id="sys" type="number" inputmode="numeric" min="50" max="260" placeholder="120" />
+      </div>
+      <div>
+        <label for="dia">Diastolic (bottom number)</label>
+        <input id="dia" type="number" inputmode="numeric" min="30" max="160" placeholder="80" />
+      </div>
+    </div>
+    <button class="cta" id="checkBtn">CHECK MY BP</button>
+    <div class="tiny">Educational screening only. One reading does not diagnose hypertension.</div>
+  </section>
+
+  <section class="card result" id="resultCard" aria-live="polite">
+    <div class="eyebrow">Your screening result</div>
+    <div class="reading" id="reading"></div>
+    <div class="badge" id="badge"></div>
+    <div class="plain" id="meaning"></div>
+    <div class="callout" id="nextStep"></div>
+
+    <div class="mini-title">Did you call it?</div>
+    <div class="plain" id="guessFeedback">Choose a guess above first if you want to compare.</div>
+
+    <div class="mini-title">What might be affecting your number today?</div>
+    <div class="risk-grid">
+      <button class="choice">☕ Caffeine</button>
+      <button class="choice">😵 Stress</button>
+      <button class="choice">😴 Poor sleep</button>
+      <button class="choice">🚬 Nicotine</button>
+      <button class="choice">🏋️ Recent exercise</button>
+      <button class="choice">🧂 High-sodium meal</button>
+    </div>
+    <p class="tiny">These factors can influence a reading, but this tool cannot tell you what caused yours.</p>
+  </section>
+
+  <section class="card">
+    <div class="question">How to get a cleaner reading</div>
+    <p class="plain">Sit quietly for about 5 minutes. Keep your back supported, feet flat, legs uncrossed, arm supported at heart level, and use the correct cuff size. Avoid talking during the measurement.</p>
+  </section>
+
+  <section class="card">
+    <div class="question">When is it urgent?</div>
+    <p class="plain">If your blood pressure is <strong>higher than 180 systolic and/or higher than 120 diastolic</strong>, repeat the measurement after a brief rest and follow your screening team's protocol.</p>
+    <div class="callout dangerbox"><strong>Call 911 for emergency symptoms</strong> such as chest pain, shortness of breath, new weakness or numbness, vision changes, difficulty speaking, or other severe symptoms with a very high reading.</div>
+  </section>
+
+  <div class="footer">
+    High blood pressure categories follow the 2025 American Heart Association/American College of Cardiology adult blood pressure guideline:
+    Normal &lt;120 and &lt;80; Elevated 120–129 and &lt;80; Stage 1 130–139 or 80–89; Stage 2 ≥140 or ≥90.
+    For this project, a separate <strong>low screening range</strong> is defined as systolic &lt;90 <strong>and</strong> diastolic &lt;70.
+    <br><br>
+    This page is for adult community education and screening, not diagnosis or individualized treatment. Pregnancy requires pregnancy-specific blood pressure guidance.
+    <br><br>
+    Sources:
+    <a href="https://www.heart.org/en/health-topics/high-blood-pressure/understanding-blood-pressure-readings" target="_blank" rel="noopener">American Heart Association: Understanding Blood Pressure Readings</a> ·
+    <a href="https://professional.heart.org/en/science-news/2025-high-blood-pressure-guideline/top-things-to-know" target="_blank" rel="noopener">2025 High Blood Pressure Guideline</a>
+  </div>
+</main>
+<section class="card">
+  <div class="eyebrow">Quick Heart Check</div>
+  <div class="question">A few anonymous questions about your day</div>
+  <p class="plain">
+    These questions help us look at cardiovascular health patterns in our community. Do not enter your name or any identifying information.
+  </p>
+  </section>
+  <!--AGE--> 
+  <section class="card survey-question" data-question="--AGE--">
+    <div class="question">How old are you?</div>
+    <div class="answer-body">
+    <div class="guess grid"> 
+      <div class="choice" data-value="18-20">18-20</button>
+        <div class="choice" data-value="21-24">21-24</button>
+          <div class="choice" data-value="25-29">25-29</button>
+            <div class="choice" data-value="30-39">30-39</button>
+              <div class="choice" data-value="40+">40+</button>
+                </div>
+    </div>
+    <div class="answered-summary">
+      <span>your answer: <strong class="summary-text"></strong></span>
+      <button class="edit-answer">change</button>
+    </div>
+  
+</section>
+<!--USUAL BP-->
+<section class="card survey-question"data-question="KnowsBP">
+  <div class="question">Before today did you know your usual blood pressure?</div> 
+  <div class="answer-body">
+    <div class="guess-grid">
+      <button class="choice" data-value="yes">yes</button>
+        <button class="choice"data-value="No clue">No Clue</button>
+      </div>
+  </div>
+  <div class="answered-summary">
+    <span>your answer:<strong class="summary-text"></strong></span>
+    <button class="edit-answer">Change</button>
+  </div>
+</section>
+<!--CAFFEINE-->
+<section class="card survey-question"data-question="caffeine">
+  <div class="question">How much caffeine have you had today?</div>
+  <div class="answer-body">
+    <div class="guess-grid"> 
+      <button class="choice"data-value="1 drink">1 caffeinated drink</button>
+      <button class="choice"data-value="2 drinks">2 drinks</button>
+      <button class="choice"data-value="3 or more drinks">3 or more drinks</button>
+  </div>
+</div>
+<p class="tiny">Coffee, energy drinks, pre-workout, soda, tea, etc.</p>
+  <div class="answered-summary">
+    <span>Your answer: <strong class="summary-text"></strong></span>
+    <button class="edit-answer">Change</button>
+  </div>
+</section>
+<!-- SLEEP -->
+<section class="card survey-question" data-question="sleep">
+  <div class="question">How much sleep did you get last night?</div>
+  <div class="answer-body">
+    <div class="guess-grid">
+      <button class="choice" data-value="Under 5 hours">Under 5 hours</button>
+      <button class="choice" data-value="5-6 hours">5-6 hours</button>
+      <button class="choice" data-value="7-8 hours">7-8 hours</button>
+      <button class="choice" data-value="9+ hours">9+ hours</button>
+    </div>
+  </div>
+
+  <div class="answered-summary">
+    <span>Your answer: <strong class="summary-text"></strong></span>
+    <button class="edit-answer">Change</button>
+  </div>
+</section>
+<!-- STRESS -->
+<section class="card survey-question" data-question="stress">
+  <div class="question">How stressed do you feel today?</div>
+
+  <div class="answer-body">
+    <div class="guess-grid">
+      <button class="choice" data-value="1">1 😌</button>
+      <button class="choice" data-value="2">2</button>
+      <button class="choice" data-value="3">3</button>
+      <button class="choice" data-value="4">4</button>
+      <button class="choice" data-value="5">5 😵‍💫</button>
+    </div>
+  </div>
+  <div class="answered-summary">
+    <span>Your answer: <strong class="summary-text"></strong></span>
+    <button class="edit-answer">Change</button>
+  </div>
+</section>
+<!-- NICOTINE -->
+<section class="card survey-question" data-question="nicotine">
+  <div class="question">Have you used nicotine today?</div>
+  <div class="answer-body">
+    <div class="guess-grid">
+      <button class="choice" data-value="No">No</button>
+      <button class="choice" data-value="Vape">Vape</button>
+      <button class="choice" data-value="Cigarettes">Cigarettes</button>
+      <button class="choice" data-value="Pouch or other">Pouch / other</button>
+      <button class="choice" data-value="Prefer not to answer">Prefer not to answer</button>
+    </div>
+  </div>
+  <div class="answered-summary">
+    <span>Your answer: <strong class="summary-text"></strong></span>
+    <button class="edit-answer">Change</button>
+  </div>
+</section>
+<section class="card survey-question" data-question="Sex"> 
+  <div class="question">What sex were you assigned at birth?</div>
+  <div class="answer-body">
+    <div class="guess-grid"> 
+      <button class="choice" data-value="Male">Male</button>
+      <button class="choice" data-value="Female">Female</button>
+      <button class="choice" data-value="Prefer not to answer">Prefer Not To Answer</button>
+    </div>
+  </div>
+  <div class="answered-summary">
+    <span>Your answer: <strong class="summary-text"></strong></span>
+    <button class="edit-answer">Change</button>
+  </div>
+</section>
+<section class="card survey-question" data-question="Exercise">
+  <div class="question">How physically active are you in a typical week?</div>
+  <div class="answer-body"> 
+  <div class="guess-grid">
+      <button class="choice" data-value="1-2 days">1-2 days</button>
+      <button class="choice" data-value="3-4 days">3-4 days</button>
+      <button class="choice" data-value="5 or more days">5 or more days</button>
+    </div>
+  </div>
+  <div class="answered-summary">
+    <span>Your answer:<strong class="summary-text"></strong></span>
+    <button class="edit-answer">Change</button>
+  </div>
+</section>
+<section class="card survey-question" data-question="Confidence">
+  <div class="question">After using this tool, do you feel more confident in understand your blood pressure readings?</div>
+  <div class="answer-body">
+    <div class="guess-grid">
+      <button class="choice" data-value="Yes">Yes</button>
+      <button class="choice" data-value="Somewhat">Somewhat</button>
+      <button class="choice" data-value="No">No</button>
+    </div>
+  </div>
+  <div class="answered-summary">
+    <span>Your answer:<strong class="summary-text"></strong></span>
+    <button class="edit-answer">Change</button>
+  </div>
+</section>
+<section class="card" id="finishCard">
+  <div class="eyebrow">Almost done</div>
+  <div class="question">Ready to finish?</div>
+  <p class="plain">
+    Your responses are anonymous and are being used for educational purposes only. Thank you. 
+  </p>
+  <button class="cta" id="finishBtn">FINISH SURVEY</button>
+  <div class="answered-summary" id="finishMessage">
+    <span><strong>Thank you!\</strong>Your response has been recorded!</span>
+  </div>
+</section>
+<script>
+let guessed = null;
+document.querySelectorAll('#guessGrid .choice').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#guessGrid .choice').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+    guessed = btn.dataset.guess;
+
+    document.getElementById('guessSummaryText').textContent = guessed;
+    document.getElementById('guessBody').classList.add('collapsed');
+    document.getElementById('guessSummary').classList.add('show');
+  });
+});
+document.getElementById('editGuessBtn').addEventListener('click', () => {
+  document.getElementById('guessBody').classList.remove('collapsed');
+  document.getElementById('guessSummary').classList.remove('show');
+});
+document.querySelectorAll('.risk-grid .choice').forEach(btn => {
+  btn.addEventListener('click', () => btn.classList.toggle('selected'));
+});
+// Project-configurable low BP screening thresholds.
+// Your requested rule: BOTH values must be below these numbers.
+const LOW_SYS = 90;
+const LOW_DIA = 60;
+function classify(sys, dia){
+  if (sys < LOW_SYS && dia < LOW_DIA) return {
+    label:'Low blood pressure range',
+    cls:'elevated',
+    guessGroup:'Low',
+    meaning:'Your screening reading falls below this project’s low blood pressure reference range.',
+    next:'Low blood pressure is not diagnosed from one reading alone. If you feel dizzy, faint, weak, confused, unusually fatigued, or otherwise unwell, tell the screening team and seek appropriate medical evaluation.'
+  };
+  if (sys > 180 || dia > 120) return {
+    label:'Severe hypertension range',
+    cls:'severe',
+    guessGroup:'High',
+    meaning:'This is a severely high screening value. A single measurement is not a diagnosis, but this range needs prompt attention.',
+    next:'Sit quietly and repeat the measurement after a brief rest. If the value remains this high, contact a healthcare professional promptly. If severe symptoms are present, call 911.'
+  };
+  if (sys >= 140 || dia >= 90) return {
+    label:'Stage 2 hypertension range',
+    cls:'stage2',
+    guessGroup:'High',
+    meaning:'Your screening reading falls in the Stage 2 hypertension range. One reading alone does not establish a diagnosis.',
+    next:'Recheck using proper technique and arrange follow-up with a healthcare professional if readings remain elevated.'
+  };
+  if ((sys >= 130 && sys <= 139) || (dia >= 80 && dia <= 89)) return {
+    label:'Stage 1 hypertension range',
+    cls:'stage1',
+    guessGroup:'High',
+    meaning:'Your screening reading falls in the Stage 1 hypertension range. This does not mean you have been diagnosed with hypertension.',
+    next:'Consider repeat measurements under good conditions and discuss persistent readings in this range with a healthcare professional.'
+  };
+  if (sys >= 120 && sys <= 129 && dia < 80) return {
+    label:'Elevated',
+    cls:'elevated',
+    guessGroup:'Elevated',
+    meaning:'Your systolic pressure is above the normal range while your diastolic pressure remains below 80.',
+    next:'Keep an eye on your numbers, use good measurement technique, and bring repeated elevated readings to your healthcare professional.'
+  };
+  if (sys < 120 && dia < 80) return {
+    label:'Normal',
+    cls:'normal',
+    guessGroup:'Normal',
+    meaning:'Your screening reading falls in the normal adult blood pressure range.',
+    next:'Keep knowing your number. Healthy sleep, activity, nutrition, avoiding nicotine, and routine preventive care all support long-term cardiovascular health.'
+  };
+  return {
+    label:'Needs review',
+    cls:'elevated',
+    guessGroup:'High',
+    meaning:'This reading does not fit neatly into the standard categories shown here.',
+    next:'Repeat the measurement using proper technique and ask the screening team or a healthcare professional to review it.'
+  };
+}
+document.getElementById('checkBtn').addEventListener('click', () => {
+  const sys = Number(document.getElementById('sys').value);
+  const dia = Number(document.getElementById('dia').value);
+
+  if (!Number.isFinite(sys) || !Number.isFinite(dia) || sys < 50 || sys > 260 || dia < 30 || dia > 160) {
+    alert('Enter a valid systolic and diastolic blood pressure.');
+    return;
+  }
+
+  const r = classify(sys, dia);
+  document.getElementById('reading').textContent = `${sys} / ${dia} mm Hg`;
+
+  const badge = document.getElementById('badge');
+  badge.textContent = r.label;
+  badge.className = `badge ${r.cls}`;
+
+  document.getElementById('meaning').textContent = r.meaning;
+  document.getElementById('nextStep').innerHTML = `<strong>What now?</strong><br>${r.next}`;
+
+  const gf = document.getElementById('guessFeedback');
+  if (!guessed){
+    gf.textContent = 'Choose a guess above first if you want to compare.';
+  } else if (guessed === r.guessGroup){
+    gf.textContent = `You guessed ${guessed} and nailed the category. BP psychic 🔮`;
+  } else {
+    gf.textContent = `You guessed ${guessed}. Your screening landed in ${r.label}. This is exactly why checking beats guessing.`;
+  }
+
+  const result = document.getElementById('resultCard');
+  result.classList.add('show');
+  result.scrollIntoView({behavior:'smooth', block:'start'});
+});
+const surveyAnswers = {};
+
+document.addEventListener('click', function(event) {
+  const answerButton = event.target.closest('.survey-question .choice');
+
+  if (answerButton) {
+    const question = answerButton.closest('.survey-question');
+    const questionName = question.dataset.question;
+    const answer = answerButton.dataset.value;
+    const answerBody = question.querySelector('.answer-body');
+    const summary = question.querySelector('.answered-summary');
+    const summaryText = question.querySelector('.summary-text');
+
+    surveyAnswers[questionName] = answer;
+
+    if (summaryText) summaryText.textContent = answer;
+    if (answerBody) answerBody.classList.add('collapsed');
+    if (summary) summary.classList.add('show');
+
+    return;
+  }
+
+  const editButton = event.target.closest('.survey-question .edit-answer');
+
+  if (editButton) {
+    const question = editButton.closest('.survey-question');
+    const answerBody = question.querySelector('.answer-body');
+    const summary = question.querySelector('.answered-summary');
+
+    if (answerBody) answerBody.classList.remove('collapsed');
+    if (summary) summary.classList.remove('show');
+  }
+});
+document.getElementById('finishBtn').addEventListener('click',() => {
+  document.getElementById('finishMessage').classList.add('show');
+  console.log("Survey answers:", surveyAnswers);
+
+});
+</script>
+</body>
+</html>
