@@ -233,7 +233,7 @@
   <div class="footer">
     High blood pressure categories follow the 2025 American Heart Association/American College of Cardiology adult blood pressure guideline:
     Normal &lt;120 and &lt;80; Elevated 120–129 and &lt;80; Stage 1 130–139 or 80–89; Stage 2 ≥140 or ≥90.
-    For this project, a separate <strong>low screening range</strong> is defined as systolic &lt;90 <strong>and</strong> diastolic &lt;70.
+    For this project, a separate <strong>low screening range</strong> is defined as systolic &lt;90 <strong>and</strong> diastolic &lt;60.
     <br><br>
     This page is for adult community education and screening, not diagnosis or individualized treatment. Pregnancy requires pregnancy-specific blood pressure guidance.
     <br><br>
@@ -241,7 +241,6 @@
     <a href="https://www.heart.org/en/health-topics/high-blood-pressure/understanding-blood-pressure-readings" target="_blank" rel="noopener">American Heart Association: Understanding Blood Pressure Readings</a> ·
     <a href="https://professional.heart.org/en/science-news/2025-high-blood-pressure-guideline/top-things-to-know" target="_blank" rel="noopener">2025 High Blood Pressure Guideline</a>
   </div>
-</main>
 <section class="card">
   <div class="eyebrow">Quick Heart Check</div>
   <div class="question">A few anonymous questions about your day</div>
@@ -249,26 +248,25 @@
     These questions help us look at cardiovascular health patterns in our community. Do not enter your name or any identifying information.
   </p>
   </section>
-  <!--AGE--> 
-  <section class="card survey-question" data-question="--AGE--">
+  <!-- AGE --> 
+  <section class="card survey-question" data-question="Age">
     <div class="question">How old are you?</div>
     <div class="answer-body">
-    <div class="guess grid"> 
-      <div class="choice" data-value="18-20">18-20</button>
-        <div class="choice" data-value="21-24">21-24</button>
-          <div class="choice" data-value="25-29">25-29</button>
-            <div class="choice" data-value="30-39">30-39</button>
-              <div class="choice" data-value="40+">40+</button>
-                </div>
+      <div class="guess-grid"> 
+        <button class="choice" data-value="18-20">18-20</button>
+        <button class="choice" data-value="21-24">21-24</button>
+        <button class="choice" data-value="25-29">25-29</button>
+        <button class="choice" data-value="30-39">30-39</button>
+        <button class="choice" data-value="40+">40+</button>
+      </div>
     </div>
     <div class="answered-summary">
-      <span>your answer: <strong class="summary-text"></strong></span>
-      <button class="edit-answer">change</button>
+      <span>Your answer: <strong class="summary-text"></strong></span>
+      <button class="edit-answer">Change</button>
     </div>
-  
-</section>
+  </section>
 <!--USUAL BP-->
-<section class="card survey-question"data-question="KnowsBP">
+<section class="card survey-question"data-question="knowsBP">
   <div class="question">Before today did you know your usual blood pressure?</div> 
   <div class="answer-body">
     <div class="guess-grid">
@@ -349,7 +347,7 @@
     <button class="edit-answer">Change</button>
   </div>
 </section>
-<section class="card survey-question" data-question="Sex"> 
+<section class="card survey-question" data-question="sex"> 
   <div class="question">What sex were you assigned at birth?</div>
   <div class="answer-body">
     <div class="guess-grid"> 
@@ -363,7 +361,7 @@
     <button class="edit-answer">Change</button>
   </div>
 </section>
-<section class="card survey-question" data-question="Exercise">
+<section class="card survey-question" data-question="exercise">
   <div class="question">How physically active are you in a typical week?</div>
   <div class="answer-body"> 
   <div class="guess-grid">
@@ -377,8 +375,8 @@
     <button class="edit-answer">Change</button>
   </div>
 </section>
-<section class="card survey-question" data-question="Confidence">
-  <div class="question">After using this tool, do you feel more confident in understand your blood pressure readings?</div>
+<section class="card survey-question" data-question="confidence">
+  <div class="question">After using this tool, do you feel more confident in understanding your blood pressure readings?</div>
   <div class="answer-body">
     <div class="guess-grid">
       <button class="choice" data-value="Yes">Yes</button>
@@ -399,9 +397,10 @@
   </p>
   <button class="cta" id="finishBtn">FINISH SURVEY</button>
   <div class="answered-summary" id="finishMessage">
-    <span><strong>Thank you!\</strong>Your response has been recorded!</span>
+    <span><strong>Thank you!</strong> Your response has been recorded!</span>
   </div>
 </section>
+</main>
 <script>
 let guessed = null;
 document.querySelectorAll('#guessGrid .choice').forEach(btn => {
