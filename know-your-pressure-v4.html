@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>What's Your Pressure?</title>
+<style>
+  :root{
+    --bg:#0b0f14;
+    --card:#121923;
+    --card2:#182230;
+    --text:#f7f9fb;
+    --muted:#aeb9c6;
+    --accent:#ff4d6d;
+    --accent2:#6ee7ff;
+    --ok:#35d07f;
+    --warn:#ffd166;
+    --danger:#ff6b6b;
+    --border:#283444;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background:
+      radial-gradient(circle at 15% 10%, rgba(110,231,255,.14), transparent 30%),
+      radial-gradient(circle at 85% 0%, rgba(255,77,109,.14), transparent 30%),
+      var(--bg);
+    color:var(--text);
+    min-height:100vh;
+  }
+  .wrap{max-width:720px;margin:0 auto;padding:28px 18px 56px}
+  .eyebrow{
+    display:inline-block;
+    font-weight:800;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    font-size:.78rem;
+    color:var(--accent2);
+    margin-bottom:8px;
+  }
+  h1{font-size:clamp(2.2rem,10vw,4.2rem);line-height:.95;margin:.1em 0 .22em}
+  .sub{font-size:1.08rem;color:var(--muted);line-height:1.5;margin:0 0 24px}
+  .card{
+    background:linear-gradient(180deg,var(--card),#793232);
+    border:1px solid var(--border);
+    border-radius:22px;
+    padding:20px;
+    box-shadow:0 18px 50px rgba(0,0,0,.2);
+    margin:14px 0;
+  }
+  .answer-body{
+    overflow:hidden;
+    max-height:500px;
+    opacity:1;
+    transition:max-height .35s ease, opacity .25s ease, margin .25s ease;
+  }
+  .answer-body.collapsed{
+    max-height:0;
+    opacity:0;
+    margin:0;
+    pointer-events:none;
+  }
+  .answered-summary{
+    display:none;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    background:#0d141d;
+    border:1px solid var(--border);
+    border-radius:14px;
+    padding:12px 14px;
+    margin-top:10px;
+  }
+  .answered-summary.show{display:flex}
+  .answered-summary strong{color:var(--accent2)}
+  .edit-answer{
+    width:auto;
+    padding:8px 11px;
+    font-size:.82rem;
+    white-space:nowrap;
+  }
+  .question{font-weight:800;font-size:1.12rem;margin-bottom:12px}
+  .guess-grid,.risk-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  button,.choice{
+    appearance:none;
+    border:1px solid var(--border);
+    background:var(--card2);
+    color:var(--text);
+    padding:14px;
+    border-radius:14px;
+    font-weight:750;
+    cursor:pointer;
+    text-align:center;
+    font-size:.98rem;
+  }
+  button:hover,.choice:hover{transform:translateY(-1px)}
+  .choice.selected{outline:2px solid var(--accent2);background:#142634}
+  .inputs{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:10px}
+  label{font-size:.83rem;color:var(--muted);display:block;margin-bottom:6px}
+  input{
+    width:100%;
+    border:1px solid var(--border);
+    background:#0b1118;
+    color:var(--text);
+    border-radius:14px;
+    padding:16px;
+    font-size:1.35rem;
+    font-weight:800;
+    outline:none;
+  }
+  input:focus{border-color:var(--accent2)}
+  .cta{
+    width:100%;
+    margin-top:14px;
+    background:linear-gradient(90deg,var(--accent),#ff7a59);
+    border:none;
+    font-size:1.05rem;
+  }
+  .result{display:none}
+  .result.show{display:block}
+  .reading{font-size:2.1rem;font-weight:900;margin:4px 0}
+  .badge{
+    display:inline-block;
+    padding:7px 10px;
+    border-radius:999px;
+    font-size:.85rem;
+    font-weight:900;
+    margin:3px 0 12px;
+  }
+  .normal{background:rgba(53,208,127,.14);color:#74f0a8}
+  .elevated{background:rgba(255,209,102,.14);color:#ffe08a}
+  .stage1{background:rgba(255,166,77,.14);color:#ffbc78}
+  .stage2,.severe{background:rgba(255,107,107,.14);color:#ff9292}
+  .plain{color:var(--muted);line-height:1.58}
+  .callout{
+    background:#0d141d;
+    border-left:4px solid var(--accent2);
+    padding:14px 14px 14px 16px;
+    border-radius:10px;
+    line-height:1.5;
+    margin:14px 0;
+  }
+  .dangerbox{border-left-color:var(--danger)}
+  .mini-title{font-size:1.1rem;font-weight:900;margin:20px 0 10px}
+  .risk-grid .choice{font-weight:700}
+  .footer{
+    margin-top:26px;
+    color:#8793a1;
+    font-size:.8rem;
+    line-height:1.5;
+  }
+  .footer a{color:#a9eaf8}
+  .tiny{font-size:.78rem;color:#8995a3;margin-top:10px}
+  @media (max-width:480px){
+    .guess-grid,.risk-grid{grid-template-columns:1fr}
+    .inputs{grid-template-columns:1fr 1fr}
+  }
+
+  .progress-wrap{position:sticky;top:0;z-index:20;padding:10px 0 12px;backdrop-filter:blur(12px);background:linear-gradient(180deg,rgba(11,15,20,.96),rgba(11,15,20,.78),transparent)}
+  .progress-shell{height:10px;background:#111923;border:1px solid var(--border);border-radius:999px;overflow:hidden}
+  .progress-bar{width:0%;height:100%;background:linear-gradient(90deg,var(--accent2),var(--accent));transition:width .3s ease}
+  .progress-text{display:flex;justify-content:space-between;gap:12px;color:var(--muted);font-size:.78rem;margin-top:7px}
+  .result.normal-result{border-color:rgba(53,208,127,.65)}
+  .result.elevated-result{border-color:rgba(255,209,102,.65)}
+  .result.stage1-result{border-color:rgba(255,166,77,.7)}
+  .result.stage2-result,.result.severe-result{border-color:rgba(255,107,107,.75)}
+  .finish-note,.error-note{display:none;margin-top:14px;padding:14px;border-radius:14px;line-height:1.5}
+  .finish-note{background:#0d141d;border:1px solid var(--border);color:var(--muted)}
+  .error-note{background:rgba(255,107,107,.1);border:1px solid rgba(255,107,107,.4);color:#ffb0b0}
+  .finish-note.show,.error-note.show{display:block}
+  .secondary-btn{width:100%;margin-top:10px;background:#111923;border:1px solid var(--border)}
+  .privacy-note{font-size:.78rem;color:#8e9aa8;line-height:1.45;margin-top:10px}
+
+</style>
+</head>
+<body>
+<main class="wrap">
+
+  <div class="progress-wrap">
+    <div class="progress-shell"><div class="progress-bar" id="progressBar"></div></div>
+    <div class="progress-text"><span id="progressLabel">Getting started</span><span id="progressCount">0% complete</span></div>
+  </div>
+
+  <div class="eyebrow">Young Adult Heart Health</div>
+  <h1>WHAT'S YOUR PRESSURE?</h1>
+  <p class="sub">You know your battery percentage. Do you know your blood pressure? Guess first, then check your number.</p>
+
+  <section class="card" id="guessCard">
+    <div class="question">1. Before we check... what do you think your BP will be?</div>
+    <div class="answer-body" id="guessBody">
+      <div class="guess-grid" id="guessGrid">
+        <button class="choice" data-guess="Low">Low</button>
+        <button class="choice" data-guess="Normal">Normal</button>
+        <button class="choice" data-guess="Elevated">Elevated</button>
+        <button class="choice" data-guess="High">High</button>
+        <button class="choice" data-guess="No idea">Absolutely no idea 💀</button>
+      </div>
+    </div>
+    <div class="answered-summary" id="guessSummary">
+      <span>Your guess: <strong id="guessSummaryText"></strong></span>
+      <button class="edit-answer" id="editGuessBtn">Change</button>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="question">2. Enter your actual reading</div>
+    <div class="inputs">
+      <div>
+        <label for="sys">Systolic (top number)</label>
+        <input id="sys" type="number" inputmode="numeric" min="50" max="260" placeholder="120" />
+      </div>
+      <div>
+        <label for="dia">Diastolic (bottom number)</label>
+        <input id="dia" type="number" inputmode="numeric" min="30" max="160" placeholder="80" />
+      </div>
+    </div>
+    <button class="cta" id="checkBtn">CHECK MY BP</button>
+    <div class="tiny">Educational screening only. One reading does not diagnose hypertension.</div>
+  </section>
+
+  <section class="card result" id="resultCard" aria-live="polite">
+    <div class="eyebrow">Your screening result</div>
+    <div class="reading" id="reading"></div>
+    <div class="badge" id="badge"></div>
+    <div class="plain" id="meaning"></div>
+    <div class="callout" id="nextStep"></div>
+
+    <div class="mini-title">Did you call it?</div>
+    <div class="plain" id="guessFeedback">Choose a guess above first if you want to compare.</div>
+
+    <div class="mini-title">What might be affecting your number today?</div>
+    <div class="risk-grid">
+      <button class="choice">☕ Caffeine</button>
+      <button class="choice">😵 Stress</button>
+      <button class="choice">😴 Poor sleep</button>
+      <button class="choice">🚬 Nicotine</button>
+      <button class="choice">🏋️ Recent exercise</button>
+      <button class="choice">🧂 High-sodium meal</button>
+    </div>
+    <p class="tiny">These factors can influence a reading, but this tool cannot tell you what caused yours.</p>
+  </section>
+
+  <section class="card">
+    <div class="question">How to get a cleaner reading</div>
+    <p class="plain">Sit quietly for about 5 minutes. Keep your back supported, feet flat, legs uncrossed, arm supported at heart level, and use the correct cuff size. Avoid talking during the measurement.</p>
+  </section>
+
+  <section class="card">
+    <div class="question">When is it urgent?</div>
+    <p class="plain">If your blood pressure is <strong>higher than 180 systolic and/or higher than 120 diastolic</strong>, repeat the measurement after a brief rest and follow your screening team's protocol.</p>
+    <div class="callout dangerbox"><strong>Call 911 for emergency symptoms</strong> such as chest pain, shortness of breath, new weakness or numbness, vision changes, difficulty speaking, or other severe symptoms with a very high reading.</div>
+  </section>
+
+  <div class="footer">
+    High blood pressure categories follow the 2025 American Heart Association/American College of Cardiology adult blood pressure guideline:
+    Normal &lt;120 and &lt;80; Elevated 120–129 and &lt;80; Stage 1 130–139 or 80–89; Stage 2 ≥140 or ≥90.
+    For this project, a separate <strong>low screening range</strong> is defined as systolic &lt;90 <strong>and</strong> diastolic &lt;60.
+    <br><br>
+    This page is for adult community education and screening, not diagnosis or individualized treatment. Pregnancy requires pregnancy-specific blood pressure guidance.
+    <br><br>
+    Sources:
+    <a href="https://www.heart.org/en/health-topics/high-blood-pressure/understanding-blood-pressure-readings" target="_blank" rel="noopener">American Heart Association: Understanding Blood Pressure Readings</a> ·
+    <a href="https://professional.heart.org/en/science-news/2025-high-blood-pressure-guideline/top-things-to-know" target="_blank" rel="noopener">2025 High Blood Pressure Guideline</a>
+  </div>
+</main>
+<section class="card">
+  <div class="eyebrow">Quick Heart Check</div>
+  <div class="question">A few anonymous questions about your day</div>
+  <p class="plain">
+    These questions help us look at cardiovascular health patterns in our community. Do not enter your name or any identifying information.
+  </p>
+  </section>
+  <!-- AGE -->
+<section class="card survey-question" data-question="age">
+  <div class="question">How old are you?</div>
+  <div class="answer-body">
+    <div class="guess-grid">
+      <button class="choice" data-value="18-20">18–20</button>
+      <button class="choice" data-value="21-24">21–24</button>
+      <button class="choice" data-value="25-29">25–29</button>
+      <button class="choice" data-value="30-39">30–39</button>
+      <button class="choice" data-value="40+">40+</button>
+    </div>
+  </div>
+  <div class="answered-summary">
+    <span>Your answer: <strong class="summary-text"></strong></span>
+    <button class="edit-answer">Change</button>
+  </div>
+</section>
+<!--USUAL BP-->
+<section class="card survey-question"data-question="knowsBP">
+  <div class="question">Before today did you know your usual blood pressure?</div> 
+  <div class="answer-body">
+    <div class="guess-grid">
+      <button class="choice" data-value="yes">yes</button>
+        <button class="choice"data-value="No clue">No Clue</button>
+      </div>
+  </div>
+  <div class="answered-summary">
+    <span>your answer:<strong class="summary-text"></strong></span>
+    <button class="edit-answer">Change</button>
+  </div>
+</section>
+<!--CAFFEINE-->
+<section class="card survey-question"data-question="caffeine">
+  <div class="question">How much caffeine have you had today?</div>
+  <div class="answer-body">
+    <div class="guess-grid"> 
+      <button class="choice" data-value="None">None</button>
+      <button class="choice"data-value="1 drink">1 caffeinated drink</button>
+      <button class="choice"data-value="2 drinks">2 drinks</button>
+      <button class="choice"data-value="3 or more drinks">3 or more drinks</button>
+  </div>
+</div>
+<p class="tiny">Coffee, energy drinks, pre-workout, soda, tea, etc.</p>
+  <div class="answered-summary">
+    <span>Your answer: <strong class="summary-text"></strong></span>
+    <button class="edit-answer">Change</button>
+  </div>
+</section>
+<!-- SLEEP -->
+<section class="card survey-question" data-question="sleep">
+  <div class="question">How much sleep did you get last night?</div>
+  <div class="answer-body">
+    <div class="guess-grid">
+      <button class="choice" data-value="Under 5 hours">Under 5 hours</button>
+      <button class="choice" data-value="5-6 hours">5-6 hours</button>
+      <button class="choice" data-value="7-8 hours">7-8 hours</button>
+      <button class="choice" data-value="9+ hours">9+ hours</button>
+    </div>
+  </div>
+
+  <div class="answered-summary">
+    <span>Your answer: <strong class="summary-text"></strong></span>
+    <button class="edit-answer">Change</button>
+  </div>
+</section>
+<!-- STRESS -->
+<section class="card survey-question" data-question="stress">
+  <div class="question">How stressed do you feel today?</div>
+
+  <div class="answer-body">
+    <div class="guess-grid">
+      <button class="choice" data-value="1">1 😌</button>
+      <button class="choice" data-value="2">2</button>
+      <button class="choice" data-value="3">3</button>
+      <button class="choice" data-value="4">4</button>
+      <button class="choice" data-value="5">5 😵‍💫</button>
+    </div>
+  </div>
+  <div class="answered-summary">
+    <span>Your answer: <strong class="summary-text"></strong></span>
+    <button class="edit-answer">Change</button>
+  </div>
+</section>
+<!-- NICOTINE -->
+<section class="card survey-question" data-question="nicotine">
+  <div class="question">Have you used nicotine today?</div>
+  <div class="answer-body">
+    <div class="guess-grid">
+      <button class="choice" data-value="No">No</button>
+      <button class="choice" data-value="Vape">Vape</button>
+      <button class="choice" data-value="Cigarettes">Cigarettes</button>
+      <button class="choice" data-value="Pouch or other">Pouch / other</button>
+      <button class="choice" data-value="Prefer not to answer">Prefer not to answer</button>
+    </div>
+  </div>
+  <div class="answered-summary">
+    <span>Your answer: <strong class="summary-text"></strong></span>
+    <button class="edit-answer">Change</button>
+  </div>
+</section>
+<section class="card survey-question" data-question="sex"> 
+  <div class="question">What sex were you assigned at birth?</div>
+  <div class="answer-body">
+    <div class="guess-grid"> 
+      <button class="choice" data-value="Male">Male</button>
+      <button class="choice" data-value="Female">Female</button>
+      <button class="choice" data-value="Prefer not to answer">Prefer Not To Answer</button>
+    </div>
+  </div>
+  <div class="answered-summary">
+    <span>Your answer: <strong class="summary-text"></strong></span>
+    <button class="edit-answer">Change</button>
+  </div>
+</section>
+<section class="card survey-question" data-question="exercise">
+  <div class="question">How physically active are you in a typical week?</div>
+  <div class="answer-body"> 
+  <div class="guess-grid">
+      <button class="choice" data-value="Rarely / 0 days">Rarely / 0 days</button>
+      <button class="choice" data-value="1-2 days">1-2 days</button>
+      <button class="choice" data-value="3-4 days">3-4 days</button>
+      <button class="choice" data-value="5 or more days">5 or more days</button>
+    </div>
+  </div>
+  <div class="answered-summary">
+    <span>Your answer:<strong class="summary-text"></strong></span>
+    <button class="edit-answer">Change</button>
+  </div>
+</section>
+<section class="card survey-question" data-question="confidence">
+  <div class="question">After using this tool, do you feel more confident in understanding your blood pressure readings?</div>
+  <div class="answer-body">
+    <div class="guess-grid">
+      <button class="choice" data-value="Yes">Yes</button>
+      <button class="choice" data-value="Somewhat">Somewhat</button>
+      <button class="choice" data-value="No">No</button>
+    </div>
+  </div>
+  <div class="answered-summary">
+    <span>Your answer:<strong class="summary-text"></strong></span>
+    <button class="edit-answer">Change</button>
+  </div>
+</section>
+<section class="card" id="finishCard">
+  <div class="eyebrow">Almost done</div>
+  <div class="question">Ready to finish?</div>
+  <p class="plain">Your responses are anonymous and are being used for this educational community-health project only.</p>
+  <p class="privacy-note">Please do not enter your name, date of birth, email address, phone number, student ID, or other identifying information anywhere in this tool.</p>
+  <button class="cta" id="finishBtn">SUBMIT & FINISH</button>
+  <div class="error-note" id="finishError"></div>
+  <div class="finish-note" id="finishMessage"><strong>Thank you! 🫀</strong><br>Your anonymous response has been submitted. Knowing your number is step one.</div>
+  <button class="secondary-btn" id="resetBtn" type="button">START NEXT PARTICIPANT</button>
+</section>
+<script>
+const SCRIPT_URL = "PASTE_GOOGLE_APPS_SCRIPT_WEB_APP_URL_HERE";
+
+let guessed = null;
+let latestBP = null;
+const surveyAnswers = {};
+const requiredSurveyKeys = ["age","knowsBP","caffeine","sleep","stress","nicotine","sex","exercise","confidence"];
+
+function updateProgress(){
+  let completed = 0;
+  const total = 2 + requiredSurveyKeys.length;
+  if (guessed) completed++;
+  if (latestBP) completed++;
+  requiredSurveyKeys.forEach(k => { if (surveyAnswers[k]) completed++; });
+  const pct = Math.round((completed/total)*100);
+  document.getElementById("progressBar").style.width = `${pct}%`;
+  document.getElementById("progressCount").textContent = `${pct}% complete`;
+  document.getElementById("progressLabel").textContent =
+    pct === 100 ? "Ready to submit" :
+    pct >= 80 ? "Almost done" :
+    pct >= 50 ? "Halfway there" :
+    pct >= 20 ? "Nice, keep going" : "Getting started";
+}
+
+document.querySelectorAll("#guessGrid .choice").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll("#guessGrid .choice").forEach(b => b.classList.remove("selected"));
+    btn.classList.add("selected");
+    guessed = btn.dataset.guess;
+    document.getElementById("guessSummaryText").textContent = guessed;
+    document.getElementById("guessBody").classList.add("collapsed");
+    document.getElementById("guessSummary").classList.add("show");
+    updateProgress();
+  });
+});
+
+document.getElementById("editGuessBtn").addEventListener("click", () => {
+  document.getElementById("guessBody").classList.remove("collapsed");
+  document.getElementById("guessSummary").classList.remove("show");
+});
+
+document.querySelectorAll(".risk-grid .choice").forEach(btn => {
+  btn.addEventListener("click", () => btn.classList.toggle("selected"));
+});
+
+const LOW_SYS = 90;
+const LOW_DIA = 60;
+
+function classify(sys,dia){
+  if (sys < LOW_SYS && dia < LOW_DIA) return {
+    label:"Low blood pressure range", cls:"elevated", resultClass:"elevated-result", guessGroup:"Low",
+    meaning:"Your screening reading falls below this project’s low blood pressure reference range.",
+    next:"Low blood pressure is not diagnosed from one reading alone. If you feel dizzy, faint, weak, confused, unusually fatigued, or otherwise unwell, tell the screening team and seek appropriate medical evaluation."
+  };
+  if (sys > 180 || dia > 120) return {
+    label:"Severe hypertension range", cls:"severe", resultClass:"severe-result", guessGroup:"High",
+    meaning:"This is a severely high screening value. A single measurement is not a diagnosis, but this range needs prompt attention.",
+    next:"Sit quietly and repeat the measurement after a brief rest. If the value remains this high, contact a healthcare professional promptly. If severe symptoms are present, call 911."
+  };
+  if (sys >= 140 || dia >= 90) return {
+    label:"Stage 2 hypertension range", cls:"stage2", resultClass:"stage2-result", guessGroup:"High",
+    meaning:"Your screening reading falls in the Stage 2 hypertension range. One reading alone does not establish a diagnosis.",
+    next:"Recheck using proper technique and arrange follow-up with a healthcare professional if readings remain elevated."
+  };
+  if ((sys >= 130 && sys <= 139) || (dia >= 80 && dia <= 89)) return {
+    label:"Stage 1 hypertension range", cls:"stage1", resultClass:"stage1-result", guessGroup:"High",
+    meaning:"Your screening reading falls in the Stage 1 hypertension range. This does not mean you have been diagnosed with hypertension.",
+    next:"Consider repeat measurements under good conditions and discuss persistent readings in this range with a healthcare professional."
+  };
+  if (sys >= 120 && sys <= 129 && dia < 80) return {
+    label:"Elevated", cls:"elevated", resultClass:"elevated-result", guessGroup:"Elevated",
+    meaning:"Your systolic pressure is above the normal range while your diastolic pressure remains below 80.",
+    next:"Keep an eye on your numbers, use good measurement technique, and bring repeated elevated readings to your healthcare professional."
+  };
+  if (sys < 120 && dia < 80) return {
+    label:"Normal", cls:"normal", resultClass:"normal-result", guessGroup:"Normal",
+    meaning:"Your screening reading falls in the normal adult blood pressure range.",
+    next:"Keep knowing your number. Healthy sleep, activity, nutrition, avoiding nicotine, and routine preventive care all support long-term cardiovascular health."
+  };
+  return {
+    label:"Needs review", cls:"elevated", resultClass:"elevated-result", guessGroup:"High",
+    meaning:"This reading does not fit neatly into the standard categories shown here.",
+    next:"Repeat the measurement using proper technique and ask the screening team or a healthcare professional to review it."
+  };
+}
+
+document.getElementById("checkBtn").addEventListener("click", () => {
+  const sys = Number(document.getElementById("sys").value);
+  const dia = Number(document.getElementById("dia").value);
+  if (!Number.isFinite(sys) || !Number.isFinite(dia) || sys < 50 || sys > 260 || dia < 30 || dia > 160) {
+    alert("That reading is outside the expected range for this tool. Please double-check the values and re-enter them.");
+    return;
+  }
+
+  const r = classify(sys,dia);
+  latestBP = {systolic:sys, diastolic:dia, category:r.label, guessMatch:guessed===r.guessGroup ? "Yes" : "No"};
+  document.getElementById("reading").textContent = `${sys} / ${dia} mm Hg`;
+
+  const badge = document.getElementById("badge");
+  badge.textContent = r.label;
+  badge.className = `badge ${r.cls}`;
+  document.getElementById("meaning").textContent = r.meaning;
+  document.getElementById("nextStep").innerHTML = `<strong>What now?</strong><br>${r.next}`;
+
+  const gf = document.getElementById("guessFeedback");
+  if (!guessed) gf.textContent = "Choose a guess above first if you want to compare.";
+  else if (guessed === r.guessGroup) gf.textContent = `You guessed ${guessed} and nailed the category. BP psychic 🔮`;
+  else gf.textContent = `You guessed ${guessed}. Your screening landed in ${r.label}. This is exactly why checking beats guessing.`;
+
+  const result = document.getElementById("resultCard");
+  result.classList.remove("normal-result","elevated-result","stage1-result","stage2-result","severe-result");
+  result.classList.add(r.resultClass,"show");
+  result.scrollIntoView({behavior:"smooth", block:"start"});
+  updateProgress();
+});
+
+document.addEventListener("click", event => {
+  const answerButton = event.target.closest(".survey-question .choice");
+  if (answerButton){
+    const q = answerButton.closest(".survey-question");
+    const name = q.dataset.question;
+    surveyAnswers[name] = answerButton.dataset.value;
+    const body = q.querySelector(".answer-body");
+    const summary = q.querySelector(".answered-summary");
+    const text = q.querySelector(".summary-text");
+    if (text) text.textContent = answerButton.dataset.value;
+    if (body) body.classList.add("collapsed");
+    if (summary) summary.classList.add("show");
+    updateProgress();
+    return;
+  }
+
+  const editButton = event.target.closest(".survey-question .edit-answer");
+  if (editButton){
+    const q = editButton.closest(".survey-question");
+    q.querySelector(".answer-body")?.classList.remove("collapsed");
+    q.querySelector(".answered-summary")?.classList.remove("show");
+  }
+});
+
+function buildSubmission(){
+  return {
+    projectDate:new Date().toLocaleDateString("en-US"),
+    bpGuess:guessed || "",
+    systolic:latestBP?.systolic ?? "",
+    diastolic:latestBP?.diastolic ?? "",
+    bpCategory:latestBP?.category ?? "",
+    guessedCorrectly:latestBP?.guessMatch ?? "",
+    age:surveyAnswers.age || "",
+    knowsBP:surveyAnswers.knowsBP || "",
+    caffeine:surveyAnswers.caffeine || "",
+    sleep:surveyAnswers.sleep || "",
+    stress:surveyAnswers.stress || "",
+    nicotine:surveyAnswers.nicotine || "",
+    sex:surveyAnswers.sex || "",
+    exercise:surveyAnswers.exercise || "",
+    confidence:surveyAnswers.confidence || ""
+  };
+}
+
+document.getElementById("finishBtn").addEventListener("click", async () => {
+  const error = document.getElementById("finishError");
+  const message = document.getElementById("finishMessage");
+  error.classList.remove("show");
+  message.classList.remove("show");
+
+  const missing = [];
+  if (!guessed) missing.push("guess");
+  if (!latestBP) missing.push("BP");
+  requiredSurveyKeys.forEach(k => { if (!surveyAnswers[k]) missing.push(k); });
+
+  if (missing.length){
+    error.textContent = "Almost there. Please complete the remaining questions before submitting.";
+    error.classList.add("show");
+    return;
+  }
+
+  const payload = buildSubmission();
+
+  if (!SCRIPT_URL || SCRIPT_URL.includes("PASTE_GOOGLE_APPS_SCRIPT")){
+    console.log("TEST MODE submission:", payload);
+    message.innerHTML = "<strong>Test complete 🫀</strong><br>The survey flow works. Data was not sent because the Google Sheet connection has not been added yet.";
+    message.classList.add("show");
+    return;
+  }
+
+  const btn = document.getElementById("finishBtn");
+  btn.disabled = true;
+  btn.textContent = "SUBMITTING...";
+
+  try{
+    await fetch(SCRIPT_URL,{
+      method:"POST",
+      mode:"no-cors",
+      body:new URLSearchParams(payload)
+    });
+    message.innerHTML = "<strong>Thank you! 🫀</strong><br>Your anonymous response has been submitted. Knowing your number is step one.";
+    message.classList.add("show");
+  }catch(err){
+    error.textContent = "We couldn't submit the response. Please ask the screening team for help and try again.";
+    error.classList.add("show");
+  }finally{
+    btn.disabled = false;
+    btn.textContent = "SUBMIT & FINISH";
+  }
+});
+
+document.getElementById("resetBtn").addEventListener("click", () => window.location.reload());
+updateProgress();
+</script>
+</body>
+</html>
